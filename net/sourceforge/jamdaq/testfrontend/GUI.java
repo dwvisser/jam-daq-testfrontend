@@ -3,53 +3,78 @@ package net.sourceforge.jamdaq.testfrontend;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.GridLayout;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 /**
  * 
- * @author <a href="mailto:dale@visser.name">Dale Visser</a>
+ * @author <a href="mailto:dwvisser@users.sourceforge.net">Dale Visser</a>
  * @version Feb 15, 2004
  */
 public class GUI extends JFrame {
-	final Status status=new Status(Status.Value.BOOTED);
-	final Counter eventsMade=new Counter("Events Generated",0);
-	final Counter eventsSent=new Counter("Events Sent",0);
-	final Counter buffersSent=new Counter("Buffers Sent",0);
-	final Container contents;
-	final Console console=new Console();
-	
-	public GUI(){
+
+	private transient MessageReceiver receiver;// NOPMD
+
+	public GUI() {
 		super("Test Front End for Jam");
-		contents=getContentPane();
+		final Container contents = getContentPane();
 		contents.setLayout(new BorderLayout());
-		JPanel center=new JPanel(new GridLayout(2,2));
+		final JPanel center = new JPanel(new GridLayout(2, 2));
 		contents.add(center, BorderLayout.CENTER);
+		final Status status = new Status(Status.Value.BOOTED);
 		center.add(status);
+		final Counter eventsMade = new Counter("Events Generated", 0);
 		center.add(eventsMade);
+		final Counter buffersSent = new Counter("Buffers Sent", 0);
 		center.add(buffersSent);
+		final Counter eventsSent = new Counter("Events Sent", 0);
 		center.add(eventsSent);
-		contents.add(console,BorderLayout.SOUTH);
-		final Runnable showWindow=new Runnable(){
-			public void run(){ 
+		final Console console = new Console();
+		contents.add(console, BorderLayout.SOUTH);
+		try {
+			final InetSocketAddress frontEnd = new InetSocketAddress(
+					"localhost", 5003);
+			final DatagramSocket frontEndSocket = new DatagramSocket(frontEnd);
+			final InetSocketAddress jam = new InetSocketAddress("localhost",
+					5005);
+			frontEndSocket.connect(jam);
+			final MessageSender sender = new MessageSender(eventsSent,
+					buffersSent, console, frontEndSocket);
+			receiver = new MessageReceiver(this, console, frontEndSocket,
+					sender);
+		} catch (UnknownHostException uhe) {
+			Console.LOGGER.throwing(GUI.class.getName(), "ctor", uhe);
+		} catch (SocketException se) {
+			Console.LOGGER.throwing(GUI.class.getName(), "ctor", se);
+		}
+
+		receiver.start();
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		final Runnable showWindow = new Runnable() {
+			public void run() {
 				pack();
-				setSize(300,getHeight());
-				show();
+				setSize(300, getHeight());
+				setVisible(true);
 			}
 		};
 		SwingUtilities.invokeLater(showWindow);
 	}
-	
-	public static void main(String [] args){
+
+	public static void main(final String[] args) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
-			final String title="Test Front End for Jam--error setting GUI appearance";
-			JOptionPane.showMessageDialog(null,e.getMessage(),title,
-			JOptionPane.WARNING_MESSAGE);
+			final String title = "Test Front End for Jam--error setting GUI appearance";
+			JOptionPane.showMessageDialog(null, e.getMessage(), title,
+					JOptionPane.WARNING_MESSAGE);
 		}
 		new GUI();
 	}

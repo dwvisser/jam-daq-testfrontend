@@ -6,11 +6,11 @@
  */
 package net.sourceforge.jamdaq.testfrontend;
 
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
 
 /**
  * 
@@ -18,31 +18,37 @@ import javax.swing.JLabel;
  * @version Feb 15, 2004
  */
 public class Counter extends JPanel {
-	private final JLabel number=new JLabel();
-	private int val=0;
-	
-	public Counter(String sname, int init){
-		final Border b=BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
-		setBorder(BorderFactory.createTitledBorder(b,sname));
-	 	setValue(init);
-	 	add(number);
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private transient final JLabel number = new JLabel();
+	private transient int val = 0;
+
+	public Counter(String sname, int init) {
+		super();
+		final Border border = BorderFactory
+				.createEtchedBorder(EtchedBorder.RAISED);
+		setBorder(BorderFactory.createTitledBorder(border, sname));
+		setValue(init);
+		add(number);
 	}
-	
-	public final void setValue(int n){
-		synchronized (number){
-			val=n;
-			number.setText(String.valueOf(n));
+
+	public final void setValue(final int value) {
+		synchronized (number) {
+			val = value;
+			number.setText(String.valueOf(value));
 		}
 	}
-	
-	public final void increment(){
-		synchronized (number){
+
+	public final void increment() {
+		synchronized (number) {
 			val++;
 			number.setText(String.valueOf(val));
 		}
 	}
-	
-	public final void reset(){
+
+	public final void reset() {
 		setValue(0);
 	}
 }

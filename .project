@@ -3,7 +3,7 @@
 	<name>JFE</name>
 	<comment></comment>
 	<projects>
-		<project>Jam Project spare</project>
+		<project>Jam Project</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -11,8 +11,14 @@
 			<arguments>
 			</arguments>
 		</buildCommand>
+		<buildCommand>
+			<name>net.sourceforge.pmd.runtime.pmdBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
 	</buildSpec>
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>net.sourceforge.pmd.runtime.pmdNature</nature>
 	</natures>
 </projectDescription>
