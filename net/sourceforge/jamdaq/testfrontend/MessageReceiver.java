@@ -9,7 +9,6 @@ import java.awt.Frame;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -26,7 +25,6 @@ public class MessageReceiver extends GoodThread {
 	private transient final DatagramSocket socket;
 	private transient final Frame frame;
 	private transient final MessageSender sender;
-	private transient Future<?> eventGenerator;
 	private transient final Console console;
 
 	/**
@@ -45,8 +43,9 @@ public class MessageReceiver extends GoodThread {
 	 * @throws UnknownHostException
 	 *             if the host is invalid
 	 */
-	MessageReceiver(Frame frame, Console console, DatagramSocket localSocket,
-			MessageSender sender) throws SocketException, UnknownHostException {
+	MessageReceiver(final Frame frame, final Console console,
+			final DatagramSocket localSocket, final MessageSender sender)
+			throws SocketException, UnknownHostException {
 		super();
 		this.console = console;
 		this.frame = frame;
@@ -54,9 +53,11 @@ public class MessageReceiver extends GoodThread {
 		this.socket = localSocket;
 	}
 
+	@Override
 	public void run() {
 		final DatagramPacket packet = new DatagramPacket(
 				new byte[RingBuffer.BUFFER_SIZE], RingBuffer.BUFFER_SIZE);
+		Future<?> eventGenerator = null;
 		while (checkState()) {
 			try {
 				socket.receive(packet);
@@ -64,20 +65,21 @@ public class MessageReceiver extends GoodThread {
 				final int status = byteBuffer.getInt();
 				if (status == PacketTypes.OK_MESSAGE.intValue()) {
 					final String message = this.unPackMessage(byteBuffer);
-					this.console.messageOutln("Recieved: " + message);
-					if (message == "START") {
-						this.eventGenerator = this.sender
-								.startSendingEventData();
-					} else if ("STOP" == message) {
-						if (null != this.eventGenerator) {
-							if (!this.eventGenerator.cancel(true)) {
-								LOGGER.severe("Couldn't stop sending events.");
-							}
-							this.eventGenerator = null;
+					MessageReceiver.this.console.messageOutln("Recieved: "
+							+ message);
+					if ("start".equalsIgnoreCase(message)) {
+						eventGenerator = this.sender.startSendingEventData();
+					} else if ((null != eventGenerator)
+							&& "stop".equalsIgnoreCase(message)) {
+						if (!eventGenerator.cancel(true)) {
+							final String error = "Couldn't stop sending events.";
+							LOGGER.severe(error);
+							this.console.errorOutln(error);
 						}
+						eventGenerator = null;
 					}
 				}
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				JOptionPane.showMessageDialog(frame, e.getMessage(), getClass()
 						.getName(), JOptionPane.ERROR_MESSAGE);
 			}

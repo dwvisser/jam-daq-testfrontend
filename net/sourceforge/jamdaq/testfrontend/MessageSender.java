@@ -8,7 +8,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -29,7 +28,6 @@ public class MessageSender {
 
 	private transient final DatagramSocket socket;
 	private transient final Console console;
-	private transient final Counter events, buffers;
 
 	/**
 	 * Creates a new message sender.
@@ -49,14 +47,15 @@ public class MessageSender {
 	 * @throws UnknownHostException
 	 *             if an address is invalid
 	 */
-	MessageSender(Counter events, Counter buffers, Console console,
-			DatagramSocket localSocket) throws SocketException,
+	MessageSender(final Counter events, final Counter buffers,
+			final Console console, final DatagramSocket localSocket,
+			final SocketAddress jamData) throws SocketException,
 			UnknownHostException {
 		super();
-		this.events = events;
-		this.buffers = buffers;
 		this.console = console;
 		this.socket = localSocket;
+		this.eventGenerator = new EventGenerator(events, buffers, console,
+				localSocket, jamData);
 	}
 
 	/**
@@ -88,7 +87,7 @@ public class MessageSender {
 					byteMessage, byteMessage.length, socket
 							.getRemoteSocketAddress());
 			socket.send(packetMessage);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			console
 					.errorOutln(getClass().getName()
 							+ ".send(): "
@@ -124,60 +123,46 @@ public class MessageSender {
 		send(status, bytes.toByteArray(), false);
 	}
 
+	private final EventGenerator eventGenerator;
+
 	public Future<?> startSendingEventData() {
-		Future<?> result = null;
-		try {
-			final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(
-					1);
-			final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1,
-					200L, TimeUnit.MILLISECONDS, queue);
-			final EventGenerator eventGenerator = new EventGenerator(events,
-					buffers, console, InetAddress.getLocalHost(), 10205);
-			result = executor.submit(eventGenerator);
-		} catch (SocketException se) {
-			console.errorOutln(se.getMessage());
-		} catch (UnknownHostException uhe) {
-			console.errorOutln(uhe.getMessage());
-		}
-		return result;
+		final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(
+				1);
+		final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 200L,
+				TimeUnit.MILLISECONDS, queue);
+		return executor.submit(eventGenerator);
 	}
 
 	static class EventGenerator implements Runnable {
 		private static final byte[] buffer = RingBuffer.freshBuffer();
-		private static final byte[] parameter = { (byte) 0x80, 0x01 };
+		private static final byte[] parameter0 = { (byte) 0x80, 0x00 };
+		private static final byte[] parameter1 = { (byte) 0x80, 0x01 };
 		private static final byte[] eventEnd = { (byte) 0xff, (byte) 0xff };
 		private static final byte[] bufferPad = { (byte) 0xff, (byte) 0xf0 };
 		private transient final Random random = new Random();
-		private transient final InetAddress address;
-		private transient final int port;
 		private transient final DatagramSocket socket;
 		private transient final Console console;
 		private transient final Counter eventCounter, bufferCounter;
+		private transient final SocketAddress jamData;
 
-		EventGenerator(Counter eventCounter, Counter bufferCounter,
-				Console console, InetAddress address, int port)
-				throws SocketException {
+		EventGenerator(final Counter eventCounter, final Counter bufferCounter,
+				final Console console, final DatagramSocket localSocket,
+				final SocketAddress address) throws SocketException {
 			this.eventCounter = eventCounter;
 			this.bufferCounter = bufferCounter;
 			this.console = console;
-			this.address = address;
-			this.port = port;
-			this.socket = new DatagramSocket(port, address);
+			this.socket = localSocket;
+			this.jamData = address;
 		}
 
 		private void fillBuffer() {
-			final int histLength = 128;
-			final int eventLength = 3 * parameter.length;
+			final int eventLength = ((parameter0.length + 2) * 2)
+					+ eventEnd.length;
 			final int count = buffer.length / eventLength;
 			int currentIndex = 0;
 			for (int i = 0; i < count; i++) {
-				System.arraycopy(parameter, 0, buffer, currentIndex,
-						parameter.length);
-				currentIndex += parameter.length;
-				buffer[currentIndex] = 0x00;
-				currentIndex++;
-				buffer[currentIndex] = (byte) random.nextInt(histLength);
-				currentIndex++;
+				currentIndex = addParameter(currentIndex, parameter0);
+				currentIndex = addParameter(currentIndex, parameter1);
 				System.arraycopy(eventEnd, 0, buffer, currentIndex,
 						eventEnd.length);
 				currentIndex += eventEnd.length;
@@ -190,22 +175,39 @@ public class MessageSender {
 			}
 		}
 
+		private int addParameter(final int currentIndex, final byte[] parameter) {
+			final int histLength = 128;
+			int result = currentIndex;
+			System.arraycopy(parameter, 0, buffer, result, parameter.length);
+			result += parameter.length;
+			buffer[result] = 0x00;
+			result++;
+			buffer[result] = (byte) random.nextInt(histLength);
+			result++;
+			return result;
+		}
+
 		public void run() {
-			while (true) {
+			boolean keepRunning = true;
+			while (keepRunning) {
 				fillBuffer();
 				try {// create and send packet
 					final DatagramPacket packetMessage = new DatagramPacket(
-							buffer, buffer.length, this.address, this.port);
+							buffer, buffer.length, this.jamData);
 					socket.send(packetMessage);
 					bufferCounter.increment();
 					Thread.sleep(100);
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					console
 							.errorOutln(getClass().getName()
 									+ ".send(): "
 									+ "Jam encountered a network communication error attempting to send a packet.");
-				} catch (InterruptedException ie) {
+				} catch (final InterruptedException ie) {
 					console.messageOutln("Event generator interrupted.");
+					keepRunning = false;
+				} catch (final Exception e) {
+					console.errorOutln(e.getMessage());
+					keepRunning = false;
 				}
 			}
 		}

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.GridLayout;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -27,7 +28,7 @@ public class GUI extends JFrame {
 		super("Test Front End for Jam");
 		final Container contents = getContentPane();
 		contents.setLayout(new BorderLayout());
-		final JPanel center = new JPanel(new GridLayout(2, 2));
+		final JPanel center = new JPanel(new GridLayout(3, 2));
 		contents.add(center, BorderLayout.CENTER);
 		final Status status = new Status(Status.Value.BOOTED);
 		center.add(status);
@@ -37,22 +38,31 @@ public class GUI extends JFrame {
 		center.add(buffersSent);
 		final Counter eventsSent = new Counter("Events Sent", 0);
 		center.add(eventsSent);
+		final NamedTextPanel fAddress = new NamedTextPanel("Front End Address",
+				"");
+		center.add(fAddress);
+		final NamedTextPanel jAddress = new NamedTextPanel("Jam Address", "");
+		center.add(jAddress);
 		final Console console = new Console();
 		contents.add(console, BorderLayout.SOUTH);
 		try {
 			final InetSocketAddress frontEnd = new InetSocketAddress(
 					"localhost", 5003);
+			fAddress.setText(frontEnd.toString());
 			final DatagramSocket frontEndSocket = new DatagramSocket(frontEnd);
-			final InetSocketAddress jam = new InetSocketAddress("localhost",
-					5005);
-			frontEndSocket.connect(jam);
+			final InetSocketAddress jamSend = new InetSocketAddress(
+					"localhost", 5002);
+			jAddress.setText(jamSend.toString());
+			final InetSocketAddress jamData = new InetSocketAddress(
+					"localhost", 10205);
+			console.messageOutln("Jam Data Address: " + jamData);
 			final MessageSender sender = new MessageSender(eventsSent,
-					buffersSent, console, frontEndSocket);
+					buffersSent, console, frontEndSocket, jamData);
 			receiver = new MessageReceiver(this, console, frontEndSocket,
 					sender);
-		} catch (UnknownHostException uhe) {
+		} catch (final UnknownHostException uhe) {
 			Console.LOGGER.throwing(GUI.class.getName(), "ctor", uhe);
-		} catch (SocketException se) {
+		} catch (final SocketException se) {
 			Console.LOGGER.throwing(GUI.class.getName(), "ctor", se);
 		}
 
@@ -61,7 +71,7 @@ public class GUI extends JFrame {
 		final Runnable showWindow = new Runnable() {
 			public void run() {
 				pack();
-				setSize(300, getHeight());
+				// setSize(300, getHeight());
 				setVisible(true);
 			}
 		};
@@ -71,7 +81,7 @@ public class GUI extends JFrame {
 	public static void main(final String[] args) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			final String title = "Test Front End for Jam--error setting GUI appearance";
 			JOptionPane.showMessageDialog(null, e.getMessage(), title,
 					JOptionPane.WARNING_MESSAGE);

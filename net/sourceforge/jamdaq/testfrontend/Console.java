@@ -52,7 +52,7 @@ public class Console extends JPanel implements MessageHandler {
 	static {
 		try {
 			LOGGER.addHandler(new FileHandler());
-		} catch (IOException ioe) {
+		} catch (final IOException ioe) {
 			System.err.println(ioe.getMessage());// NOPMD
 		}
 	}
@@ -60,12 +60,12 @@ public class Console extends JPanel implements MessageHandler {
 	/**
 	 * End of line character(s).
 	 */
-	private static final String END_LINE = (String) System
+	private static final String END_LINE = System
 			.getProperty("line.separator");
 
-	private transient JTextPane textLog; // output text area
-	private transient Document doc;
-	private transient SimpleAttributeSet attr_normal, attr_warning, attr_error;
+	private transient final JTextPane textLog; // output text area
+	private transient final Document doc;
+	private transient final SimpleAttributeSet attr_normal, attr_warning, attr_error;
 	// Is the message a new one or a continuation of one
 	private transient boolean msgLock;
 	// a lock for message output so message don't overlap
@@ -74,7 +74,7 @@ public class Console extends JPanel implements MessageHandler {
 	 * 
 	 * @serial
 	 */
-	private transient int maxLines;
+	private transient final int maxLines;
 	private transient int numberLines; // number of lines in output
 
 	private transient final Object syncLock = new Object();
@@ -110,7 +110,7 @@ public class Console extends JPanel implements MessageHandler {
 	 * Constructor: Create a JamConsole which has an text area for output a text
 	 * field for input.
 	 */
-	public Console(int linesLog) {
+	public Console(final int linesLog) {
 		super(new BorderLayout(5, 5));
 		maxLines = linesLog;
 		textLog = new JTextPane();
@@ -150,21 +150,21 @@ public class Console extends JPanel implements MessageHandler {
 				message = END_LINE + getTime() + ">" + message;
 				try {
 					doc.insertString(doc.getLength(), message, attr_normal);
-				} catch (BadLocationException e) {
+				} catch (final BadLocationException e) {
 					logException("messageOut", e);
 				}
 			} else if (part == CONTINUE) {
 				messageFile = messageFile + message;
 				try {
 					doc.insertString(doc.getLength(), message, attr_normal);
-				} catch (BadLocationException e) {
+				} catch (final BadLocationException e) {
 					logException("messageOut", e);
 				}
 			} else if (part == END) {
 				messageFile = messageFile + message + END_LINE;
 				try {
 					doc.insertString(doc.getLength(), message, attr_normal);
-				} catch (BadLocationException e) {
+				} catch (final BadLocationException e) {
 					logException("messageOut", e);
 				}
 				trimLog();
@@ -175,7 +175,7 @@ public class Console extends JPanel implements MessageHandler {
 						logFileWriter.write(messageFile, 0, messageFile
 								.length());
 						logFileWriter.flush();
-					} catch (IOException ioe) {
+					} catch (final IOException ioe) {
 						logFileOn = false;
 						errorOutln("Unable to write to log file, logging turned off [JamConsole]");
 					}
@@ -214,7 +214,7 @@ public class Console extends JPanel implements MessageHandler {
 			message = END_LINE + getTime() + ">" + message;
 			try {
 				doc.insertString(doc.getLength(), message, attr_normal);
-			} catch (BadLocationException e) {
+			} catch (final BadLocationException e) {
 				logException("messageOutln", e);
 			}
 			trimLog();
@@ -224,14 +224,13 @@ public class Console extends JPanel implements MessageHandler {
 				try {
 					logFileWriter.write(messageFile, 0, messageFile.length());
 					logFileWriter.flush();
-				} catch (IOException ioe) {
+				} catch (final IOException ioe) {
 					logFileOn = false;
 					errorOutln("Unable to write to log file, logging turned off [JamConsole]");
 				}
 			}
 			// unlock text area and notify others they can use it
 			msgLock = false;
-			notifyAll();
 		}
 	}
 
@@ -265,7 +264,7 @@ public class Console extends JPanel implements MessageHandler {
 			}
 			try {
 				doc.insertString(doc.getLength(), message, attr);
-			} catch (BadLocationException e) {
+			} catch (final BadLocationException e) {
 				logException("promptOutln", e);
 			}
 			trimLog();
@@ -276,7 +275,7 @@ public class Console extends JPanel implements MessageHandler {
 				try {
 					logFileWriter.write(messageFile, 0, messageFile.length());
 					logFileWriter.flush();
-				} catch (IOException ioe) {
+				} catch (final IOException ioe) {
 					logFileOn = false;
 					errorOutln("Unable to write to log file, logging turned off [JamConsole]");
 				}
@@ -311,7 +310,7 @@ public class Console extends JPanel implements MessageHandler {
 		try {
 			logFileWriter = new BufferedWriter(new FileWriter(file));
 
-		} catch (IOException ioe) {
+		} catch (final IOException ioe) {
 			errorOutln("Not able to create log file " + newName);
 		}
 		return newName;
@@ -327,7 +326,7 @@ public class Console extends JPanel implements MessageHandler {
 		try {
 			logFileWriter.flush();
 			logFileWriter.close();
-		} catch (IOException ioe) {
+		} catch (final IOException ioe) {
 			errorOutln("Could not close log file  [JamConsole]");
 		}
 	}
@@ -357,7 +356,7 @@ public class Console extends JPanel implements MessageHandler {
 			try {
 				doc.remove(0, textLog.getText().indexOf(END_LINE)
 						+ END_LINE.length());
-			} catch (BadLocationException ble) {
+			} catch (final BadLocationException ble) {
 				logException("trimLog", ble);
 			}
 		}
@@ -397,6 +396,7 @@ public class Console extends JPanel implements MessageHandler {
 	/**
 	 * On a class destruction close log file
 	 */
+	@Override
 	protected void finalize() throws Throwable {
 		try {
 			if (logFileOn) {
