@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Jam Test Front End" default="x-platform">
+
+    <property name="base.dir" value="." />
+    <property name="tfe.version" value="0.1" />
+    <property name="build.dir" value="${user.home}/tfebuild" />
+    <property name="copy.dir" value="${build.dir}/copy" />
+    <property name="release.dir" value="${build.dir}/release" />
+	<property name = "java.latest" value = "1.6.0_07" />
+	<property name="tfe.jar" value="jam_tfe-${tfe.version}.jar" />
+  <property name="fulltfe.jar" value = "${build.dir}/${tfe.jar}" />
+	<property name="src.zip" value="jam_tfe-${tfe.version}-src.zip"/>
+	<property name="fullsrc.zip" value="${build.dir}/${src.zip}"/>
+		
+    <target name="clean">
+    	<delete >
+    		<fileset
+    			dir="${base.dir}"
+    			includes="**\*.bak"
+    		/>
+    		</delete>
+    		<delete dir="${build.dir}" />
+    </target>
+
+    <target name="prepare" depends="clean">
+        <mkdir dir="${copy.dir}" />
+    </target>
+    
+    <target name="copy" depends="prepare">
+    	<copy todir="${copy.dir}">
+    		<fileset dir="${base.dir}" includes="**/*.java,**/*.jar,*.txt,*.bat" />
+ 		  </copy>  		
+    </target>    
+
+	<target name="srczip" depends="copy">
+        <zip zipfile="${fullsrc.zip}"
+            basedir="${copy.dir}"
+            includes="net\**\*.java"
+        />    
+  </target>
+       
+    <target name="compile" depends="copy">
+    	<javac source="1.6" target="1.6" includeantruntime="false" srcdir="${copy.dir}" destdir="${copy.dir}">
+    		<compilerarg value="-Xlint:unchecked" />
+     		<classpath>
+    			<pathelement location="${copy.dir}" />
+    			<pathelement location="${copy.dir}/lib/jam-2.4.18.jar" />
+    		</classpath>
+   	</javac>
+    </target> 	
+
+    <target name="jar" depends="compile">
+        <jar destfile="${fulltfe.jar}">
+        	<fileset dir="${copy.dir}"
+                     excludes="net\**\*.java  ,**\*.jar"
+        	/>
+        </jar>  
+    </target>
+
+   	<target name="x-platform" depends="jar,srczip" description="Create and populate x-platform release folder.">
+   		<copy todir="${release.dir}">
+    	 	<fileset dir="${build.dir}" includes="${tfe.jar}" />
+    	 	<fileset dir="${build.dir}" includes="${src.zip}" />
+        <fileset dir="${copy.dir}/lib" includes="jam-2.4.18.jar" />
+        <fileset dir="${copy.dir}" includes="readme.txt,launch.bat" />
+  		</copy>
+ 	</target>        
+</project>

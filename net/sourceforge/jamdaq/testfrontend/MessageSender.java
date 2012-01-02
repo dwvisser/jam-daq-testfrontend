@@ -1,8 +1,6 @@
 package net.sourceforge.jamdaq.testfrontend;
 
 import jam.global.JamException;
-import jam.sort.RingBuffer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -134,7 +132,12 @@ public class MessageSender {
 	}
 
 	static class EventGenerator implements Runnable {
-		private static final byte[] buffer = RingBuffer.freshBuffer();
+  	/**
+	   * Size in bytes of a single buffer.
+	   */
+	  private static final int BUFFER_SIZE = 0x2000; // 8k
+
+		private static final byte[] buffer = new byte[BUFFER_SIZE];
 		private static final byte[] parameter0 = { (byte) 0x80, 0x00 };
 		private static final byte[] parameter1 = { (byte) 0x80, 0x01 };
 		private static final byte[] eventEnd = { (byte) 0xff, (byte) 0xff };
