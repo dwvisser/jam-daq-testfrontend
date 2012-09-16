@@ -1,12 +1,6 @@
 Jam Test Front End Readme File
 ==============================
 
-Git
----
-git clone git://jam-daq.git.sourceforge.net/gitroot/jam-daq/testfrontend (read-only)
-
-git clone ssh://dwvisser@jam-daq.git.sourceforge.net/gitroot/jam-daq/testfrontend (read/write) 
-
 Building
 --------
 If you have cloned the source using git, you will be able to simply run Ant
@@ -15,9 +9,9 @@ installer, go to http://ant.apache.org/
 
 Launching
 ---------
-On windows systems, running launch.bat will launch the Jam Test Front End. If
-you have built from source using the above instructions, you need to be in the 
-target 'release' folder.
+Once you have successfully built the project, cd to the target release
+folder. On Windows systems, running launch.bat will launch the Jam Test Front
+End. For Linux, run using launch.sh.
 
 Using
 -----

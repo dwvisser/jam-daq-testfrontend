@@ -28,7 +28,7 @@
     
     <target name="copy" depends="prepare">
     	<copy todir="${copy.dir}">
-    		<fileset dir="${base.dir}" includes="**/*.java,**/*.jar,*.txt,*.bat" />
+    		<fileset dir="${base.dir}" includes="**/*.java,**/*.jar,*.txt,*.bat,*.sh" />
  		  </copy>  		
     </target>    
 
@@ -62,7 +62,7 @@
     	 	<fileset dir="${build.dir}" includes="${tfe.jar}" />
     	 	<fileset dir="${build.dir}" includes="${src.zip}" />
         <fileset dir="${copy.dir}/lib" includes="jam-2.4.18.jar" />
-        <fileset dir="${copy.dir}" includes="readme.txt,launch.bat" />
+        <fileset dir="${copy.dir}" includes="readme.txt,launch.bat,launch.sh" />
   		</copy>
  	</target>        
 </project>
